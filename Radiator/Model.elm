@@ -25,7 +25,8 @@ type alias Model = {
 type alias RadiatorStatus = {
   repository: String,
   branch: Maybe String,
-  state: String
+  state: String,
+  date: String
 }
 
 
@@ -44,7 +45,8 @@ type alias ConfigPanel = {
 type alias BuildStatus = {
   branch: String,
   state: String,
-  buildNumber: Int
+  buildNumber: Int,
+  date: String
 }
 
 

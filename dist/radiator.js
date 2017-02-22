@@ -9095,12 +9095,12 @@ var _user$project$Travis$BranchStatus = F2(
 	function (a, b) {
 		return {branches: a, commits: b};
 	});
-var _user$project$Travis$BranchBuild = F4(
-	function (a, b, c, d) {
-		return {id: a, commitId: b, state: c, number: d};
+var _user$project$Travis$BranchBuild = F5(
+	function (a, b, c, d, e) {
+		return {id: a, commitId: b, state: c, number: d, date: e};
 	});
-var _user$project$Travis$decodeBranchBuild = A5(
-	_elm_lang$core$Json_Decode$map4,
+var _user$project$Travis$decodeBranchBuild = A6(
+	_elm_lang$core$Json_Decode$map5,
 	_user$project$Travis$BranchBuild,
 	A2(
 		_elm_lang$core$Json_Decode$at,
@@ -9127,6 +9127,18 @@ var _user$project$Travis$decodeBranchBuild = A5(
 				_1: {ctor: '[]'}
 			}
 		},
+		_elm_lang$core$Json_Decode$string),
+	A2(
+		_elm_lang$core$Json_Decode$at,
+		{
+			ctor: '::',
+			_0: 'date-started',
+			_1: {
+				ctor: '::',
+				_0: 'date',
+				_1: {ctor: '[]'}
+			}
+		},
 		_elm_lang$core$Json_Decode$string));
 var _user$project$Travis$Commit = F5(
 	function (a, b, c, d, e) {
@@ -9136,7 +9148,18 @@ var _user$project$Travis$decodeCommit = A6(
 	_elm_lang$core$Json_Decode$map5,
 	_user$project$Travis$Commit,
 	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$int),
-	A2(_elm_lang$core$Json_Decode$field, 'project', _elm_lang$core$Json_Decode$string),
+	A2(
+		_elm_lang$core$Json_Decode$at,
+		{
+			ctor: '::',
+			_0: 'job',
+			_1: {
+				ctor: '::',
+				_0: 'name',
+				_1: {ctor: '[]'}
+			}
+		},
+		_elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'user', _elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'user', _elm_lang$core$Json_Decode$string),
 	A2(
@@ -9187,7 +9210,7 @@ var _user$project$Travis$getBranchBuildStatus = F2(
 				A2(
 					_elm_lang$core$Basics_ops['++'],
 					jobId,
-					A2(_elm_lang$core$Basics_ops['++'], '/executions?format=json&authtoken=', key))));
+					A2(_elm_lang$core$Basics_ops['++'], '/executions?max=1&format=json&authtoken=', key))));
 		return A3(_user$project$Travis$travisApiGet, apiKey, decoder, url);
 	});
 
@@ -9195,9 +9218,9 @@ var _user$project$Radiator_Model$Model = F4(
 	function (a, b, c, d) {
 		return {mode: a, configuration: b, configPanel: c, buildStatus: d};
 	});
-var _user$project$Radiator_Model$RadiatorStatus = F3(
-	function (a, b, c) {
-		return {repository: a, branch: b, state: c};
+var _user$project$Radiator_Model$RadiatorStatus = F4(
+	function (a, b, c, d) {
+		return {repository: a, branch: b, state: c, date: d};
 	});
 var _user$project$Radiator_Model$Configuration = F2(
 	function (a, b) {
@@ -9207,9 +9230,9 @@ var _user$project$Radiator_Model$ConfigPanel = F2(
 	function (a, b) {
 		return {repositorySlug: a, apiKeyValue: b};
 	});
-var _user$project$Radiator_Model$BuildStatus = F3(
-	function (a, b, c) {
-		return {branch: a, state: b, buildNumber: c};
+var _user$project$Radiator_Model$BuildStatus = F4(
+	function (a, b, c, d) {
+		return {branch: a, state: b, buildNumber: c, date: d};
 	});
 var _user$project$Radiator_Model$SaveApiKey = {ctor: 'SaveApiKey'};
 var _user$project$Radiator_Model$TogglePrivateTravis = function (a) {
@@ -9302,7 +9325,8 @@ var _user$project$Radiator_Update$combineAsBuildStatus = F2(
 			buildNumber: A2(
 				_elm_lang$core$Result$withDefault,
 				-1,
-				_elm_lang$core$String$toInt(_p6.number))
+				_elm_lang$core$String$toInt(_p6.number)),
+			date: _p6.date
 		};
 	});
 var _user$project$Radiator_Update$sortCombineBuildData = function (_p8) {
@@ -9316,15 +9340,19 @@ var _user$project$Radiator_Update$toBuildStatusList = _elm_lang$core$Tuple$mapSe
 var _user$project$Radiator_Update$toRadiatorStatusList = function (_p10) {
 	var _p11 = _p10;
 	return A2(
-		_elm_lang$core$List$map,
-		function (build) {
-			return A3(
-				_user$project$Radiator_Model$RadiatorStatus,
-				_p11._0,
-				_elm_lang$core$Maybe$Just(build.branch),
-				build.state);
-		},
-		_p11._1);
+		_elm_lang$core$List$take,
+		1,
+		A2(
+			_elm_lang$core$List$map,
+			function (build) {
+				return A4(
+					_user$project$Radiator_Model$RadiatorStatus,
+					_p11._0,
+					_elm_lang$core$Maybe$Just(build.branch),
+					build.state,
+					_elm_lang$core$Basics$toString(build.date));
+			},
+			_p11._1));
 };
 var _user$project$Radiator_Update$refreshModelBuildState = F2(
 	function (newStatus, model) {
@@ -9889,6 +9917,13 @@ var _user$project$Radiator_View$configPanel = F2(
 	});
 var _user$project$Radiator_View$branchElems = function (_p4) {
 	var _p5 = _p4;
+	var _p6 = _p5.date;
+	var label = _elm_lang$core$Maybe$map(
+		F2(
+			function (x, y) {
+				return A2(_elm_lang$core$Basics_ops['++'], x, y);
+			})(
+			A2(_elm_lang$core$Basics_ops['++'], ': ', _p6)));
 	var repoName = _user$project$Radiator_View$displayableRepoName(_p5.repository);
 	var branchName = A2(
 		_elm_lang$core$Maybe$withDefault,
@@ -9899,7 +9934,7 @@ var _user$project$Radiator_View$branchElems = function (_p4) {
 				function (x, y) {
 					return A2(_elm_lang$core$Basics_ops['++'], x, y);
 				})(
-				A2(_elm_lang$core$Basics_ops['++'], repoName, ': ')),
+				A2(_elm_lang$core$Basics_ops['++'], _p6, ': ')),
 			_p5.branch));
 	return {
 		ctor: '::',
@@ -9942,8 +9977,8 @@ var _user$project$Radiator_View$buildRepositoryListing = function (statuses) {
 };
 var _user$project$Radiator_View$view = function (model) {
 	var configMarkup = function () {
-		var _p6 = model.mode;
-		if (_p6.ctor === 'Config') {
+		var _p7 = model.mode;
+		if (_p7.ctor === 'Config') {
 			return A2(_user$project$Radiator_View$configPanel, model.configuration, model.configPanel);
 		} else {
 			return {ctor: '[]'};

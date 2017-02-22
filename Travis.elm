@@ -17,7 +17,8 @@ type alias BranchBuild = {
   id : String,
   commitId : Int,
   state: String,
-  number: String
+  number: String,
+  date: String
 }
 
 
@@ -35,11 +36,11 @@ decodeBranchStatus = map2 BranchStatus (field "executions" (list decodeBranchBui
 
 
 decodeBranchBuild: Decoder BranchBuild
-decodeBranchBuild = map4 BranchBuild (at ["job", "name"] string) (field "id" int) (field "status" string) (at ["date-started", "date"] string)
+decodeBranchBuild = map5 BranchBuild (at ["job", "name"] string) (field "id" int) (field "status" string) (at ["date-started", "date"] string) (at ["date-started", "date"] string)
 
 
 decodeCommit: Decoder Commit
-decodeCommit = map5 Commit (field "id" int) (field "project" string) (field "user" string) (field "user" string) (at ["date-started", "date"] string)
+decodeCommit = map5 Commit (field "id" int) (at ["job", "name"] string) (field "user" string) (field "user" string) (at ["date-started", "date"] string)
 
 
 baseUrl : Maybe String -> String
@@ -51,7 +52,7 @@ getBranchBuildStatus apiKey jobId =
   let key = case apiKey of
               Just key -> key
               Nothing -> ""
-      url = (baseUrl apiKey) ++ "/api/14/job/" ++ jobId ++ "/executions?format=json&authtoken=" ++ key
+      url = (baseUrl apiKey) ++ "/api/14/job/" ++ jobId ++ "/executions?max=1&format=json&authtoken=" ++ key
       decoder = map (\result -> (jobId, result)) decodeBranchStatus
   in travisApiGet apiKey decoder url
 

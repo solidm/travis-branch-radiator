@@ -78,7 +78,7 @@ refreshModelBuildState newStatus model =
 
 toRadiatorStatusList: (String, List BuildStatus) -> List RadiatorStatus
 toRadiatorStatusList (repository, branchBuildStatuses) =
-    List.map (\build -> RadiatorStatus repository (Just build.branch) build.state) branchBuildStatuses
+   List.take 1 (List.map (\build -> RadiatorStatus repository (Just build.branch) build.state (toString build.date)) branchBuildStatuses)
   --let nonPassed = List.filter (\build -> build.state /= "passed") (List.take 5 branchBuildStatuses)
   --in case nonPassed of
   --  [] -> [RadiatorStatus repository Nothing "passed"]
@@ -96,10 +96,11 @@ sortCombineBuildData {branches, commits} =
 
 
 combineAsBuildStatus: Travis.BranchBuild -> Travis.Commit -> BuildStatus
-combineAsBuildStatus { state, number } { branch } = {
+combineAsBuildStatus { date, number, state } { branch } = {
     state = state,
     branch = branch,
-    buildNumber = Result.withDefault -1 (String.toInt number)
+    buildNumber = Result.withDefault -1 (String.toInt number),
+    date = date
   }
 
 

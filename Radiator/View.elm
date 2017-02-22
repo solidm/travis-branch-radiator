@@ -32,9 +32,10 @@ asListItem s = H.li [A.class ("branch " ++ s.state)] (branchElems s)
 
 
 branchElems: RadiatorStatus -> List (Html Msg)
-branchElems { repository, branch } = 
-  let repoName = displayableRepoName repository 
-      branchName = Maybe.withDefault repoName (Maybe.map ((++) (repoName ++ ": ")) branch)
+branchElems { repository, branch, date } =
+  let repoName = displayableRepoName repository
+      label = Maybe.map ((++) (": " ++ date))
+      branchName = Maybe.withDefault repoName (Maybe.map ((++) (date ++ ": ")) branch)
   in [H.span [A.class "branch-name"] [H.text branchName]]
 
 
