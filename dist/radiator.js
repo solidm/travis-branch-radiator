@@ -1564,8 +1564,7 @@ function toString(v)
 	var type = typeof v;
 	if (type === 'function')
 	{
-		var name = v.func ? v.func.name : v.name;
-		return '<function' + (name === '' ? '' : ':') + name + '>';
+		return '<function>';
 	}
 
 	if (type === 'boolean')
@@ -2072,6 +2071,13 @@ var _elm_lang$core$List$sortWith = _elm_lang$core$Native_List.sortWith;
 var _elm_lang$core$List$sortBy = _elm_lang$core$Native_List.sortBy;
 var _elm_lang$core$List$sort = function (xs) {
 	return A2(_elm_lang$core$List$sortBy, _elm_lang$core$Basics$identity, xs);
+};
+var _elm_lang$core$List$singleton = function (value) {
+	return {
+		ctor: '::',
+		_0: value,
+		_1: {ctor: '[]'}
+	};
 };
 var _elm_lang$core$List$drop = F2(
 	function (n, list) {
@@ -3520,15 +3526,8 @@ function setupIncomingPort(name, callback)
 		sentBeforeInit.push(value);
 	}
 
-	function postInitSend(incomingValue)
+	function postInitSend(value)
 	{
-		var result = A2(_elm_lang$core$Json_Decode$decodeValue, converter, incomingValue);
-		if (result.ctor === 'Err')
-		{
-			throw new Error('Trying to send an unexpected type of value through port `' + name + '`:\n' + result._0);
-		}
-
-		var value = result._0;
 		var temp = subs;
 		while (temp.ctor !== '[]')
 		{
@@ -3539,7 +3538,13 @@ function setupIncomingPort(name, callback)
 
 	function send(incomingValue)
 	{
-		currentSend(incomingValue);
+		var result = A2(_elm_lang$core$Json_Decode$decodeValue, converter, incomingValue);
+		if (result.ctor === 'Err')
+		{
+			throw new Error('Trying to send an unexpected type of value through port `' + name + '`:\n' + result._0);
+		}
+
+		currentSend(result._0);
 	}
 
 	return { send: send };
@@ -4160,7 +4165,7 @@ function endsWith(sub, str)
 function indexes(sub, str)
 {
 	var subLen = sub.length;
-	
+
 	if (subLen < 1)
 	{
 		return _elm_lang$core$Native_List.Nil;
@@ -4173,74 +4178,78 @@ function indexes(sub, str)
 	{
 		is.push(i);
 		i = i + subLen;
-	}	
-	
+	}
+
 	return _elm_lang$core$Native_List.fromArray(is);
 }
+
 
 function toInt(s)
 {
 	var len = s.length;
+
+	// if empty
 	if (len === 0)
 	{
-		return _elm_lang$core$Result$Err("could not convert string '" + s + "' to an Int" );
+		return intErr(s);
 	}
-	var start = 0;
-	if (s[0] === '-')
+
+	// if hex
+	var c = s[0];
+	if (c === '0' && s[1] === 'x')
 	{
-		if (len === 1)
+		for (var i = 2; i < len; ++i)
 		{
-			return _elm_lang$core$Result$Err("could not convert string '" + s + "' to an Int" );
+			var c = s[i];
+			if (('0' <= c && c <= '9') || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f'))
+			{
+				continue;
+			}
+			return intErr(s);
 		}
-		start = 1;
+		return _elm_lang$core$Result$Ok(parseInt(s, 16));
 	}
-	for (var i = start; i < len; ++i)
+
+	// is decimal
+	if (c > '9' || (c < '0' && c !== '-' && c !== '+'))
+	{
+		return intErr(s);
+	}
+	for (var i = 1; i < len; ++i)
 	{
 		var c = s[i];
 		if (c < '0' || '9' < c)
 		{
-			return _elm_lang$core$Result$Err("could not convert string '" + s + "' to an Int" );
+			return intErr(s);
 		}
 	}
+
 	return _elm_lang$core$Result$Ok(parseInt(s, 10));
 }
 
+function intErr(s)
+{
+	return _elm_lang$core$Result$Err("could not convert string '" + s + "' to an Int");
+}
+
+
 function toFloat(s)
 {
-	var len = s.length;
-	if (len === 0)
+	// check if it is a hex, octal, or binary number
+	if (s.length === 0 || /[\sxbo]/.test(s))
 	{
-		return _elm_lang$core$Result$Err("could not convert string '" + s + "' to a Float" );
+		return floatErr(s);
 	}
-	var start = 0;
-	if (s[0] === '-')
-	{
-		if (len === 1)
-		{
-			return _elm_lang$core$Result$Err("could not convert string '" + s + "' to a Float" );
-		}
-		start = 1;
-	}
-	var dotCount = 0;
-	for (var i = start; i < len; ++i)
-	{
-		var c = s[i];
-		if ('0' <= c && c <= '9')
-		{
-			continue;
-		}
-		if (c === '.')
-		{
-			dotCount += 1;
-			if (dotCount <= 1)
-			{
-				continue;
-			}
-		}
-		return _elm_lang$core$Result$Err("could not convert string '" + s + "' to a Float" );
-	}
-	return _elm_lang$core$Result$Ok(parseFloat(s));
+	var n = +s;
+	// faster isNaN check
+	return n === n ? _elm_lang$core$Result$Ok(n) : floatErr(s);
 }
+
+function floatErr(s)
+{
+	return _elm_lang$core$Result$Err("could not convert string '" + s + "' to a Float");
+}
+
 
 function toList(str)
 {
@@ -5695,11 +5704,6 @@ function badToString(problem)
 				problem = problem.rest;
 				break;
 
-			case 'index':
-				context += '[' + problem.index + ']';
-				problem = problem.rest;
-				break;
-
 			case 'oneOf':
 				var problems = problem.problems;
 				for (var i = 0; i < problems.length; i++)
@@ -6427,9 +6431,9 @@ function on(name, options, decoder)
 
 function equalEvents(a, b)
 {
-	if (!a.options === b.options)
+	if (a.options !== b.options)
 	{
-		if (a.stopPropagation !== b.stopPropagation || a.preventDefault !== b.preventDefault)
+		if (a.options.stopPropagation !== b.options.stopPropagation || a.options.preventDefault !== b.options.preventDefault)
 		{
 			return false;
 		}
@@ -7705,7 +7709,7 @@ function normalRenderer(parentNode, view)
 var rAF =
 	typeof requestAnimationFrame !== 'undefined'
 		? requestAnimationFrame
-		: function(callback) { callback(); };
+		: function(callback) { setTimeout(callback, 1000 / 60); };
 
 function makeStepper(domNode, view, initialVirtualNode, eventNode)
 {
@@ -9057,10 +9061,7 @@ var _user$project$Travis$getAuthHeaders = function (maybeKey) {
 	if (_p0.ctor === 'Just') {
 		return {
 			ctor: '::',
-			_0: A2(
-				_elm_lang$http$Http$header,
-				'Authorization',
-				A2(_elm_lang$core$Basics_ops['++'], 'token ', _p0._0)),
+			_0: A2(_elm_lang$http$Http$header, 'X-Rundeck-Auth-Token', _p0._0),
 			_1: {ctor: '[]'}
 		};
 	} else {
@@ -9068,14 +9069,11 @@ var _user$project$Travis$getAuthHeaders = function (maybeKey) {
 	}
 };
 var _user$project$Travis$travisHeaders = function (apiKey) {
-	return A2(
-		_elm_lang$core$List$append,
-		{
-			ctor: '::',
-			_0: A2(_elm_lang$http$Http$header, 'Accept', 'application/vnd.travis-ci.2+json'),
-			_1: {ctor: '[]'}
-		},
-		_user$project$Travis$getAuthHeaders(apiKey));
+	return {
+		ctor: '::',
+		_0: A2(_elm_lang$http$Http$header, 'Accept', 'application/json'),
+		_1: {ctor: '[]'}
+	};
 };
 var _user$project$Travis$travisApiGet = F3(
 	function (apiKey, decoder, url) {
@@ -9091,12 +9089,7 @@ var _user$project$Travis$travisApiGet = F3(
 		return _elm_lang$http$Http$request(request);
 	});
 var _user$project$Travis$baseUrl = function (maybeKey) {
-	var _p1 = maybeKey;
-	if (_p1.ctor === 'Just') {
-		return 'https://api.travis-ci.com';
-	} else {
-		return 'https://api.travis-ci.org';
-	}
+	return 'https://api.staging.match-engine.keskodev.zone:4443';
 };
 var _user$project$Travis$BranchStatus = F2(
 	function (a, b) {
@@ -9109,10 +9102,32 @@ var _user$project$Travis$BranchBuild = F4(
 var _user$project$Travis$decodeBranchBuild = A5(
 	_elm_lang$core$Json_Decode$map4,
 	_user$project$Travis$BranchBuild,
+	A2(
+		_elm_lang$core$Json_Decode$at,
+		{
+			ctor: '::',
+			_0: 'job',
+			_1: {
+				ctor: '::',
+				_0: 'name',
+				_1: {ctor: '[]'}
+			}
+		},
+		_elm_lang$core$Json_Decode$string),
 	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$int),
-	A2(_elm_lang$core$Json_Decode$field, 'commit_id', _elm_lang$core$Json_Decode$int),
-	A2(_elm_lang$core$Json_Decode$field, 'state', _elm_lang$core$Json_Decode$string),
-	A2(_elm_lang$core$Json_Decode$field, 'number', _elm_lang$core$Json_Decode$string));
+	A2(_elm_lang$core$Json_Decode$field, 'status', _elm_lang$core$Json_Decode$string),
+	A2(
+		_elm_lang$core$Json_Decode$at,
+		{
+			ctor: '::',
+			_0: 'date-started',
+			_1: {
+				ctor: '::',
+				_0: 'date',
+				_1: {ctor: '[]'}
+			}
+		},
+		_elm_lang$core$Json_Decode$string));
 var _user$project$Travis$Commit = F5(
 	function (a, b, c, d, e) {
 		return {id: a, branch: b, committerName: c, committerEmail: d, message: e};
@@ -9121,36 +9136,58 @@ var _user$project$Travis$decodeCommit = A6(
 	_elm_lang$core$Json_Decode$map5,
 	_user$project$Travis$Commit,
 	A2(_elm_lang$core$Json_Decode$field, 'id', _elm_lang$core$Json_Decode$int),
-	A2(_elm_lang$core$Json_Decode$field, 'branch', _elm_lang$core$Json_Decode$string),
-	A2(_elm_lang$core$Json_Decode$field, 'committer_name', _elm_lang$core$Json_Decode$string),
-	A2(_elm_lang$core$Json_Decode$field, 'committer_email', _elm_lang$core$Json_Decode$string),
-	A2(_elm_lang$core$Json_Decode$field, 'message', _elm_lang$core$Json_Decode$string));
+	A2(_elm_lang$core$Json_Decode$field, 'project', _elm_lang$core$Json_Decode$string),
+	A2(_elm_lang$core$Json_Decode$field, 'user', _elm_lang$core$Json_Decode$string),
+	A2(_elm_lang$core$Json_Decode$field, 'user', _elm_lang$core$Json_Decode$string),
+	A2(
+		_elm_lang$core$Json_Decode$at,
+		{
+			ctor: '::',
+			_0: 'date-started',
+			_1: {
+				ctor: '::',
+				_0: 'date',
+				_1: {ctor: '[]'}
+			}
+		},
+		_elm_lang$core$Json_Decode$string));
 var _user$project$Travis$decodeBranchStatus = A3(
 	_elm_lang$core$Json_Decode$map2,
 	_user$project$Travis$BranchStatus,
 	A2(
 		_elm_lang$core$Json_Decode$field,
-		'branches',
+		'executions',
 		_elm_lang$core$Json_Decode$list(_user$project$Travis$decodeBranchBuild)),
 	A2(
 		_elm_lang$core$Json_Decode$field,
-		'commits',
+		'executions',
 		_elm_lang$core$Json_Decode$list(_user$project$Travis$decodeCommit)));
 var _user$project$Travis$getBranchBuildStatus = F2(
-	function (apiKey, repositorySlug) {
+	function (apiKey, jobId) {
 		var decoder = A2(
 			_elm_lang$core$Json_Decode$map,
 			function (result) {
-				return {ctor: '_Tuple2', _0: repositorySlug, _1: result};
+				return {ctor: '_Tuple2', _0: jobId, _1: result};
 			},
 			_user$project$Travis$decodeBranchStatus);
+		var key = function () {
+			var _p1 = apiKey;
+			if (_p1.ctor === 'Just') {
+				return _p1._0;
+			} else {
+				return '';
+			}
+		}();
 		var url = A2(
 			_elm_lang$core$Basics_ops['++'],
 			_user$project$Travis$baseUrl(apiKey),
 			A2(
 				_elm_lang$core$Basics_ops['++'],
-				'/repos/',
-				A2(_elm_lang$core$Basics_ops['++'], repositorySlug, '/branches')));
+				'/api/14/job/',
+				A2(
+					_elm_lang$core$Basics_ops['++'],
+					jobId,
+					A2(_elm_lang$core$Basics_ops['++'], '/executions?format=json&authtoken=', key))));
 		return A3(_user$project$Travis$travisApiGet, apiKey, decoder, url);
 	});
 
@@ -9278,32 +9315,16 @@ var _user$project$Radiator_Update$sortCombineBuildData = function (_p8) {
 var _user$project$Radiator_Update$toBuildStatusList = _elm_lang$core$Tuple$mapSecond(_user$project$Radiator_Update$sortCombineBuildData);
 var _user$project$Radiator_Update$toRadiatorStatusList = function (_p10) {
 	var _p11 = _p10;
-	var _p13 = _p11._0;
-	var nonPassed = A2(
-		_elm_lang$core$List$filter,
+	return A2(
+		_elm_lang$core$List$map,
 		function (build) {
-			return !_elm_lang$core$Native_Utils.eq(build.state, 'passed');
+			return A3(
+				_user$project$Radiator_Model$RadiatorStatus,
+				_p11._0,
+				_elm_lang$core$Maybe$Just(build.branch),
+				build.state);
 		},
-		A2(_elm_lang$core$List$take, 5, _p11._1));
-	var _p12 = nonPassed;
-	if (_p12.ctor === '[]') {
-		return {
-			ctor: '::',
-			_0: A3(_user$project$Radiator_Model$RadiatorStatus, _p13, _elm_lang$core$Maybe$Nothing, 'passed'),
-			_1: {ctor: '[]'}
-		};
-	} else {
-		return A2(
-			_elm_lang$core$List$map,
-			function (build) {
-				return A3(
-					_user$project$Radiator_Model$RadiatorStatus,
-					_p13,
-					_elm_lang$core$Maybe$Just(build.branch),
-					build.state);
-			},
-			nonPassed);
-	}
+		_p11._1);
 };
 var _user$project$Radiator_Update$refreshModelBuildState = F2(
 	function (newStatus, model) {
@@ -9363,8 +9384,8 @@ var _user$project$Radiator_Update$updateConfig = F2(
 	});
 var _user$project$Radiator_Update$update = F2(
 	function (action, model) {
-		var _p14 = action;
-		switch (_p14.ctor) {
+		var _p12 = action;
+		switch (_p12.ctor) {
 			case 'RefreshBuilds':
 				return {
 					ctor: '_Tuple2',
@@ -9372,10 +9393,10 @@ var _user$project$Radiator_Update$update = F2(
 					_1: _user$project$Radiator_Update$refreshBuilds(model.configuration)
 				};
 			case 'NewBuildStatus':
-				if (_p14._0.ctor === 'Ok') {
+				if (_p12._0.ctor === 'Ok') {
 					return {
 						ctor: '_Tuple2',
-						_0: A2(_user$project$Radiator_Update$refreshModelBuildState, _p14._0._0, model),
+						_0: A2(_user$project$Radiator_Update$refreshModelBuildState, _p12._0._0, model),
 						_1: _elm_lang$core$Platform_Cmd$none
 					};
 				} else {
@@ -9395,7 +9416,7 @@ var _user$project$Radiator_Update$update = F2(
 				var cfg = model.configPanel;
 				var configView = _elm_lang$core$Native_Utils.update(
 					cfg,
-					{repositorySlug: _p14._0});
+					{repositorySlug: _p12._0});
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(
@@ -9433,7 +9454,7 @@ var _user$project$Radiator_Update$update = F2(
 				var newRepositories = A2(
 					_elm_lang$core$List$filter,
 					function (r) {
-						return !_elm_lang$core$Native_Utils.eq(r, _p14._0);
+						return !_elm_lang$core$Native_Utils.eq(r, _p12._0);
 					},
 					model.configuration.repositories);
 				return A2(
@@ -9445,7 +9466,7 @@ var _user$project$Radiator_Update$update = F2(
 					},
 					model);
 			case 'TogglePrivateTravis':
-				var newApiKey = _p14._0 ? _elm_lang$core$Maybe$Just(model.configPanel.apiKeyValue) : _elm_lang$core$Maybe$Nothing;
+				var newApiKey = _p12._0 ? _elm_lang$core$Maybe$Just(model.configPanel.apiKeyValue) : _elm_lang$core$Maybe$Nothing;
 				return A2(
 					_user$project$Radiator_Update$updateConfig,
 					function (cfg) {
@@ -9458,7 +9479,7 @@ var _user$project$Radiator_Update$update = F2(
 				var cfg = model.configPanel;
 				var configView = _elm_lang$core$Native_Utils.update(
 					cfg,
-					{apiKeyValue: _p14._0});
+					{apiKeyValue: _p12._0});
 				return {
 					ctor: '_Tuple2',
 					_0: _elm_lang$core$Native_Utils.update(

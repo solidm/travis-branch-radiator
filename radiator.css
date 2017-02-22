@@ -60,11 +60,11 @@ a, a:visited {
 
 @keyframes roll { 100% { transform: rotateZ(180deg) } }
 
-.passed {
+.succeeded {
   background-color: #61c654;
 }
 
-.passed::before {
+.succeeded::before {
   background-image: url("img/sunny.svg");
   animation: roll 90s infinite alternate linear;
 }

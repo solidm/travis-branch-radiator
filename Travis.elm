@@ -4,6 +4,7 @@ import Json.Decode exposing (..)
 import Http
 import Task exposing (Task)
 import Time exposing (second)
+import Debug
 
 
 type alias BranchStatus = {
@@ -13,7 +14,7 @@ type alias BranchStatus = {
 
 
 type alias BranchBuild = {
-  id : Int,
+  id : String,
   commitId : Int,
   state: String,
   number: String
@@ -30,27 +31,28 @@ type alias Commit = {
 
 
 decodeBranchStatus: Decoder BranchStatus
-decodeBranchStatus = map2 BranchStatus (field "branches" (list decodeBranchBuild)) (field "commits" (list decodeCommit))
+decodeBranchStatus = map2 BranchStatus (field "executions" (list decodeBranchBuild)) (field "executions" (list decodeCommit))
 
 
 decodeBranchBuild: Decoder BranchBuild
-decodeBranchBuild = map4 BranchBuild (field "id" int) (field "commit_id" int) (field "state" string) (field "number" string)
+decodeBranchBuild = map4 BranchBuild (at ["job", "name"] string) (field "id" int) (field "status" string) (at ["date-started", "date"] string)
 
 
 decodeCommit: Decoder Commit
-decodeCommit = map5 Commit (field "id" int) (field "branch" string) (field "committer_name" string) (field "committer_email" string) (field "message" string)
+decodeCommit = map5 Commit (field "id" int) (field "project" string) (field "user" string) (field "user" string) (at ["date-started", "date"] string)
 
 
 baseUrl : Maybe String -> String
-baseUrl maybeKey = case maybeKey of
-  Just _  -> "https://api.travis-ci.com"
-  Nothing -> "https://api.travis-ci.org"
+baseUrl maybeKey = "https://api.staging.match-engine.keskodev.zone:4443"
 
 
 getBranchBuildStatus : Maybe String -> String -> Http.Request (String, BranchStatus)
-getBranchBuildStatus apiKey repositorySlug =
-  let url = (baseUrl apiKey) ++ "/repos/" ++ repositorySlug ++ "/branches"
-      decoder = map (\result -> (repositorySlug, result)) decodeBranchStatus
+getBranchBuildStatus apiKey jobId =
+  let key = case apiKey of
+              Just key -> key
+              Nothing -> ""
+      url = (baseUrl apiKey) ++ "/api/14/job/" ++ jobId ++ "/executions?format=json&authtoken=" ++ key
+      decoder = map (\result -> (jobId, result)) decodeBranchStatus
   in travisApiGet apiKey decoder url
 
 travisApiGet : Maybe String -> Decoder a -> String -> Http.Request a
@@ -61,10 +63,10 @@ travisApiGet apiKey decoder url =
 
 
 travisHeaders : Maybe String -> List Http.Header
-travisHeaders apiKey = List.append [Http.header "Accept" "application/vnd.travis-ci.2+json"] (getAuthHeaders apiKey)
+travisHeaders apiKey = [Http.header "Accept" "application/json"]
 
 
 getAuthHeaders: Maybe String -> List Http.Header
 getAuthHeaders maybeKey = case maybeKey of
-  Just apiKey -> [Http.header "Authorization" ("token " ++ apiKey)]
+  Just apiKey -> [Http.header "X-Rundeck-Auth-Token" apiKey]
   Nothing  -> []

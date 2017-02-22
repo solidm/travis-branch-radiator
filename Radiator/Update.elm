@@ -78,10 +78,11 @@ refreshModelBuildState newStatus model =
 
 toRadiatorStatusList: (String, List BuildStatus) -> List RadiatorStatus
 toRadiatorStatusList (repository, branchBuildStatuses) =
-  let nonPassed = List.filter (\build -> build.state /= "passed") (List.take 5 branchBuildStatuses)
-  in case nonPassed of
-    [] -> [RadiatorStatus repository Nothing "passed"]
-    xs -> List.map (\build -> RadiatorStatus repository (Just build.branch) build.state) nonPassed
+    List.map (\build -> RadiatorStatus repository (Just build.branch) build.state) branchBuildStatuses
+  --let nonPassed = List.filter (\build -> build.state /= "passed") (List.take 5 branchBuildStatuses)
+  --in case nonPassed of
+  --  [] -> [RadiatorStatus repository Nothing "passed"]
+  --  xs -> List.map (\build -> RadiatorStatus repository (Just build.branch) build.state) nonPassed
 
 
 toBuildStatusList: (String, Travis.BranchStatus) -> (String, List BuildStatus)
