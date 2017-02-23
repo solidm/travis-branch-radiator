@@ -40,13 +40,17 @@ branchElems { repository, branch, date } =
 
 
 configPanel: Configuration -> ConfigPanel -> List (Html Msg)
-configPanel { repositories, apiKey } { repositorySlug, apiKeyValue } = 
+configPanel { repositories, apiKey} { repositorySlug, apiKeyValue, repoUrl} =
   let usePrivateTravis = Util.isJust apiKey
       repositoryItems = List.map repositoryItem repositories
   in [H.div [A.class "config-panel"] [
        H.button [A.class "config-close-button",
          E.onClick FlipConfigMode] [] ,
        H.h2 [] [H.text "Configuration"],
+       H.section [] [
+         H.h3 [] [H.text "Rundeck url"],
+         urlInput repoUrl
+         ],
        H.section [] [
          H.h3 [] [H.text "Repositories"],
          H.ul [A.class "config-repository-list"] repositoryItems,
@@ -68,6 +72,15 @@ repositoryInput repositorySlug =
     H.div [A.class "config-panel-control-row"] [
       H.input [A.type_ "text", A.id "add-repository", A.value repositorySlug, E.onInput UpdateRepositoryField] [] ,
       H.button [E.onClick AddRepository] [H.text "Add"]
+      ]]
+
+urlInput: String -> Html Msg
+urlInput repoUrl =
+  H.div [] [
+    H.label [A.for "add-url"] [H.text "Set the rundeck url"],
+    H.div [A.class "config-panel-control-row"] [
+      H.input [A.type_ "text", A.id "set-url", A.value repoUrl, E.onInput UpdateRepositoryUrl] [] ,
+      H.button [E.onClick SaveRepositoryUrl] [H.text "Set"]
       ]]
 
 

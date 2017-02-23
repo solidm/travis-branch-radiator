@@ -8,6 +8,8 @@ type Msg = RefreshBuilds
             | NewBuildStatus (Result Http.Error (String, Travis.BranchStatus))
             | FlipConfigMode 
             | UpdateRepositoryField String
+            | UpdateRepositoryUrl String
+            | SaveRepositoryUrl
             | AddRepository
             | RemoveRepository String
             | UpdateApiKeyField String 
@@ -32,13 +34,15 @@ type alias RadiatorStatus = {
 
 type alias Configuration = {
   apiKey: Maybe String,
-  repositories: List String
+  repositories: List String,
+  repoUrl: String
 }
 
 
 type alias ConfigPanel = {
   repositorySlug: String,
-  apiKeyValue: String
+  apiKeyValue: String,
+  repoUrl: String
 }
 
 

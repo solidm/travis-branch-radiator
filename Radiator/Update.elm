@@ -30,6 +30,14 @@ update action model =
            configView = { cfg | repositorySlug = repository }
        in ({ model | configPanel = configView }, Cmd.none)
 
+     UpdateRepositoryUrl url ->
+       let cfg = model.configPanel
+           configView = { cfg | repoUrl = url }
+       in ({ model | configPanel = configView }, Cmd.none)
+
+     SaveRepositoryUrl ->
+            updateConfig (\cfg -> {cfg | repoUrl = model.configPanel.repoUrl}) model
+
      AddRepository ->
        let currentConfig = model.configuration
            cfgPanel = model.configPanel
@@ -42,7 +50,7 @@ update action model =
        in updateConfig (\cfg -> { cfg | repositories = newRepositories }) model
 
      TogglePrivateTravis usePrivateTravis ->
-       let newApiKey = if usePrivateTravis 
+       let newApiKey = if usePrivateTravis
                          then Just model.configPanel.apiKeyValue
                          else Nothing
        in updateConfig (\cfg -> { cfg | apiKey = newApiKey }) model
@@ -52,7 +60,7 @@ update action model =
            configView = { cfg | apiKeyValue = key }
        in ({ model | configPanel = configView }, Cmd.none)
 
-     SaveApiKey -> 
+     SaveApiKey ->
        updateConfig (\cfg -> {cfg | apiKey = (Just model.configPanel.apiKeyValue)}) model
 
 
@@ -105,9 +113,9 @@ combineAsBuildStatus { date, number, state } { branch } = {
 
 
 refreshBuilds : Configuration -> Cmd Msg 
-refreshBuilds { apiKey, repositories } =
+refreshBuilds { apiKey, repositories, repoUrl } =
   let repositoryTasks repository =
-    Http.send NewBuildStatus (Travis.getBranchBuildStatus apiKey repository)
+    Http.send NewBuildStatus (Travis.getBranchBuildStatus apiKey repository repoUrl)
   in List.map repositoryTasks repositories
     |> Cmd.batch
 

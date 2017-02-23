@@ -11,14 +11,15 @@ refreshInterval: Time
 refreshInterval= 10 * second
 
 defaultConfig = { apiKey = Nothing, repositories =
-  ["elm-lang/elm-compiler", "elm-lang/core"] }
+  ["elm-lang/elm-compiler", "elm-lang/core"], repoUrl = "" }
 
 
 initialConfigPanel: Model.Configuration -> Model.ConfigPanel
 initialConfigPanel config =
   {
     repositorySlug = "",
-    apiKeyValue = Maybe.withDefault "" config.apiKey
+    apiKeyValue = Maybe.withDefault "" config.apiKey,
+    repoUrl = config.repoUrl
   }
 
 main : Program { localStorageCfg: Maybe Model.Configuration } Model.Model Model.Msg

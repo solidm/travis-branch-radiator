@@ -43,16 +43,12 @@ decodeCommit: Decoder Commit
 decodeCommit = map5 Commit (field "id" int) (at ["job", "name"] string) (field "user" string) (field "user" string) (at ["date-started", "date"] string)
 
 
-baseUrl : Maybe String -> String
-baseUrl maybeKey = "https://api.staging.match-engine.keskodev.zone:4443"
-
-
-getBranchBuildStatus : Maybe String -> String -> Http.Request (String, BranchStatus)
-getBranchBuildStatus apiKey jobId =
+getBranchBuildStatus : Maybe String -> String -> String -> Http.Request (String, BranchStatus)
+getBranchBuildStatus apiKey jobId baseUrl =
   let key = case apiKey of
               Just key -> key
               Nothing -> ""
-      url = (baseUrl apiKey) ++ "/api/14/job/" ++ jobId ++ "/executions?max=1&format=json&authtoken=" ++ key
+      url = baseUrl ++ "/api/14/job/" ++ jobId ++ "/executions?max=1&format=json&authtoken=" ++ key
       decoder = map (\result -> (jobId, result)) decodeBranchStatus
   in travisApiGet apiKey decoder url
 

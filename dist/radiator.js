@@ -9088,9 +9088,6 @@ var _user$project$Travis$travisApiGet = F3(
 		};
 		return _elm_lang$http$Http$request(request);
 	});
-var _user$project$Travis$baseUrl = function (maybeKey) {
-	return 'https://api.staging.match-engine.keskodev.zone:4443';
-};
 var _user$project$Travis$BranchStatus = F2(
 	function (a, b) {
 		return {branches: a, commits: b};
@@ -9185,8 +9182,8 @@ var _user$project$Travis$decodeBranchStatus = A3(
 		_elm_lang$core$Json_Decode$field,
 		'executions',
 		_elm_lang$core$Json_Decode$list(_user$project$Travis$decodeCommit)));
-var _user$project$Travis$getBranchBuildStatus = F2(
-	function (apiKey, jobId) {
+var _user$project$Travis$getBranchBuildStatus = F3(
+	function (apiKey, jobId, baseUrl) {
 		var decoder = A2(
 			_elm_lang$core$Json_Decode$map,
 			function (result) {
@@ -9203,7 +9200,7 @@ var _user$project$Travis$getBranchBuildStatus = F2(
 		}();
 		var url = A2(
 			_elm_lang$core$Basics_ops['++'],
-			_user$project$Travis$baseUrl(apiKey),
+			baseUrl,
 			A2(
 				_elm_lang$core$Basics_ops['++'],
 				'/api/14/job/',
@@ -9222,13 +9219,13 @@ var _user$project$Radiator_Model$RadiatorStatus = F4(
 	function (a, b, c, d) {
 		return {repository: a, branch: b, state: c, date: d};
 	});
-var _user$project$Radiator_Model$Configuration = F2(
-	function (a, b) {
-		return {apiKey: a, repositories: b};
+var _user$project$Radiator_Model$Configuration = F3(
+	function (a, b, c) {
+		return {apiKey: a, repositories: b, repoUrl: c};
 	});
-var _user$project$Radiator_Model$ConfigPanel = F2(
-	function (a, b) {
-		return {repositorySlug: a, apiKeyValue: b};
+var _user$project$Radiator_Model$ConfigPanel = F3(
+	function (a, b, c) {
+		return {repositorySlug: a, apiKeyValue: b, repoUrl: c};
 	});
 var _user$project$Radiator_Model$BuildStatus = F4(
 	function (a, b, c, d) {
@@ -9245,6 +9242,10 @@ var _user$project$Radiator_Model$RemoveRepository = function (a) {
 	return {ctor: 'RemoveRepository', _0: a};
 };
 var _user$project$Radiator_Model$AddRepository = {ctor: 'AddRepository'};
+var _user$project$Radiator_Model$SaveRepositoryUrl = {ctor: 'SaveRepositoryUrl'};
+var _user$project$Radiator_Model$UpdateRepositoryUrl = function (a) {
+	return {ctor: 'UpdateRepositoryUrl', _0: a};
+};
 var _user$project$Radiator_Model$UpdateRepositoryField = function (a) {
 	return {ctor: 'UpdateRepositoryField', _0: a};
 };
@@ -9264,7 +9265,8 @@ var _user$project$Radiator_Ports$saveConfiguration = _elm_lang$core$Native_Platf
 			repositories: _elm_lang$core$Native_List.toArray(v.repositories).map(
 				function (v) {
 					return v;
-				})
+				}),
+			repoUrl: v.repoUrl
 		};
 	});
 
@@ -9310,7 +9312,7 @@ var _user$project$Radiator_Update$refreshBuilds = function (_p2) {
 		return A2(
 			_elm_lang$http$Http$send,
 			_user$project$Radiator_Model$NewBuildStatus,
-			A2(_user$project$Travis$getBranchBuildStatus, _p3.apiKey, repository));
+			A3(_user$project$Travis$getBranchBuildStatus, _p3.apiKey, repository, _p3.repoUrl));
 	};
 	return _elm_lang$core$Platform_Cmd$batch(
 		A2(_elm_lang$core$List$map, repositoryTasks, _p3.repositories));
@@ -9452,6 +9454,27 @@ var _user$project$Radiator_Update$update = F2(
 						{configPanel: configView}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
+			case 'UpdateRepositoryUrl':
+				var cfg = model.configPanel;
+				var configView = _elm_lang$core$Native_Utils.update(
+					cfg,
+					{repoUrl: _p12._0});
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
+						model,
+						{configPanel: configView}),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'SaveRepositoryUrl':
+				return A2(
+					_user$project$Radiator_Update$updateConfig,
+					function (cfg) {
+						return _elm_lang$core$Native_Utils.update(
+							cfg,
+							{repoUrl: model.configPanel.repoUrl});
+					},
+					model);
 			case 'AddRepository':
 				var updatedRepositories = A2(
 					_elm_lang$core$List$append,
@@ -9737,6 +9760,76 @@ var _user$project$Radiator_View$usePrivateTravisInput = function ($private) {
 			}
 		});
 };
+var _user$project$Radiator_View$urlInput = function (repoUrl) {
+	return A2(
+		_elm_lang$html$Html$div,
+		{ctor: '[]'},
+		{
+			ctor: '::',
+			_0: A2(
+				_elm_lang$html$Html$label,
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html_Attributes$for('add-url'),
+					_1: {ctor: '[]'}
+				},
+				{
+					ctor: '::',
+					_0: _elm_lang$html$Html$text('Set the rundeck url'),
+					_1: {ctor: '[]'}
+				}),
+			_1: {
+				ctor: '::',
+				_0: A2(
+					_elm_lang$html$Html$div,
+					{
+						ctor: '::',
+						_0: _elm_lang$html$Html_Attributes$class('config-panel-control-row'),
+						_1: {ctor: '[]'}
+					},
+					{
+						ctor: '::',
+						_0: A2(
+							_elm_lang$html$Html$input,
+							{
+								ctor: '::',
+								_0: _elm_lang$html$Html_Attributes$type_('text'),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$html$Html_Attributes$id('set-url'),
+									_1: {
+										ctor: '::',
+										_0: _elm_lang$html$Html_Attributes$value(repoUrl),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$html$Html_Events$onInput(_user$project$Radiator_Model$UpdateRepositoryUrl),
+											_1: {ctor: '[]'}
+										}
+									}
+								}
+							},
+							{ctor: '[]'}),
+						_1: {
+							ctor: '::',
+							_0: A2(
+								_elm_lang$html$Html$button,
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html_Events$onClick(_user$project$Radiator_Model$SaveRepositoryUrl),
+									_1: {ctor: '[]'}
+								},
+								{
+									ctor: '::',
+									_0: _elm_lang$html$Html$text('Set'),
+									_1: {ctor: '[]'}
+								}),
+							_1: {ctor: '[]'}
+						}
+					}),
+				_1: {ctor: '[]'}
+			}
+		});
+};
 var _user$project$Radiator_View$repositoryInput = function (repositorySlug) {
 	return A2(
 		_elm_lang$html$Html$div,
@@ -9858,24 +9951,13 @@ var _user$project$Radiator_View$configPanel = F2(
 										{ctor: '[]'},
 										{
 											ctor: '::',
-											_0: _elm_lang$html$Html$text('Repositories'),
+											_0: _elm_lang$html$Html$text('Rundeck url'),
 											_1: {ctor: '[]'}
 										}),
 									_1: {
 										ctor: '::',
-										_0: A2(
-											_elm_lang$html$Html$ul,
-											{
-												ctor: '::',
-												_0: _elm_lang$html$Html_Attributes$class('config-repository-list'),
-												_1: {ctor: '[]'}
-											},
-											repositoryItems),
-										_1: {
-											ctor: '::',
-											_0: _user$project$Radiator_View$repositoryInput(_p3.repositorySlug),
-											_1: {ctor: '[]'}
-										}
+										_0: _user$project$Radiator_View$urlInput(_p3.repoUrl),
+										_1: {ctor: '[]'}
 									}
 								}),
 							_1: {
@@ -9890,23 +9972,56 @@ var _user$project$Radiator_View$configPanel = F2(
 											{ctor: '[]'},
 											{
 												ctor: '::',
-												_0: _elm_lang$html$Html$text('API'),
+												_0: _elm_lang$html$Html$text('Repositories'),
 												_1: {ctor: '[]'}
 											}),
 										_1: {
 											ctor: '::',
-											_0: _user$project$Radiator_View$usePrivateTravisInput(usePrivateTravis),
+											_0: A2(
+												_elm_lang$html$Html$ul,
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html_Attributes$class('config-repository-list'),
+													_1: {ctor: '[]'}
+												},
+												repositoryItems),
 											_1: {
 												ctor: '::',
-												_0: _user$project$Radiator_View$apiKeyInput(_p3.apiKeyValue),
+												_0: _user$project$Radiator_View$repositoryInput(_p3.repositorySlug),
 												_1: {ctor: '[]'}
 											}
 										}
 									}),
 								_1: {
 									ctor: '::',
-									_0: _user$project$Radiator_View$attributions,
-									_1: {ctor: '[]'}
+									_0: A2(
+										_elm_lang$html$Html$section,
+										{ctor: '[]'},
+										{
+											ctor: '::',
+											_0: A2(
+												_elm_lang$html$Html$h3,
+												{ctor: '[]'},
+												{
+													ctor: '::',
+													_0: _elm_lang$html$Html$text('API'),
+													_1: {ctor: '[]'}
+												}),
+											_1: {
+												ctor: '::',
+												_0: _user$project$Radiator_View$usePrivateTravisInput(usePrivateTravis),
+												_1: {
+													ctor: '::',
+													_0: _user$project$Radiator_View$apiKeyInput(_p3.apiKeyValue),
+													_1: {ctor: '[]'}
+												}
+											}
+										}),
+									_1: {
+										ctor: '::',
+										_0: _user$project$Radiator_View$attributions,
+										_1: {ctor: '[]'}
+									}
 								}
 							}
 						}
@@ -10019,7 +10134,8 @@ var _user$project$Radiator_View$view = function (model) {
 var _user$project$RadiatorApp$initialConfigPanel = function (config) {
 	return {
 		repositorySlug: '',
-		apiKeyValue: A2(_elm_lang$core$Maybe$withDefault, '', config.apiKey)
+		apiKeyValue: A2(_elm_lang$core$Maybe$withDefault, '', config.apiKey),
+		repoUrl: config.repoUrl
 	};
 };
 var _user$project$RadiatorApp$defaultConfig = {
@@ -10032,7 +10148,8 @@ var _user$project$RadiatorApp$defaultConfig = {
 			_0: 'elm-lang/core',
 			_1: {ctor: '[]'}
 		}
-	}
+	},
+	repoUrl: ''
 };
 var _user$project$RadiatorApp$initialize = function (_p0) {
 	var _p1 = _p0;
@@ -10088,14 +10205,19 @@ var _user$project$RadiatorApp$main = _elm_lang$html$Html$programWithFlags(
 								function (apiKey) {
 									return A2(
 										_elm_lang$core$Json_Decode$andThen,
-										function (repositories) {
-											return _elm_lang$core$Json_Decode$succeed(
-												{apiKey: apiKey, repositories: repositories});
+										function (repoUrl) {
+											return A2(
+												_elm_lang$core$Json_Decode$andThen,
+												function (repositories) {
+													return _elm_lang$core$Json_Decode$succeed(
+														{apiKey: apiKey, repoUrl: repoUrl, repositories: repositories});
+												},
+												A2(
+													_elm_lang$core$Json_Decode$field,
+													'repositories',
+													_elm_lang$core$Json_Decode$list(_elm_lang$core$Json_Decode$string)));
 										},
-										A2(
-											_elm_lang$core$Json_Decode$field,
-											'repositories',
-											_elm_lang$core$Json_Decode$list(_elm_lang$core$Json_Decode$string)));
+										A2(_elm_lang$core$Json_Decode$field, 'repoUrl', _elm_lang$core$Json_Decode$string));
 								},
 								A2(
 									_elm_lang$core$Json_Decode$field,
