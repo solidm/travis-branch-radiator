@@ -69,11 +69,11 @@ a, a:visited {
   animation: roll 90s infinite alternate linear;
 }
 
-.started {
+.running {
   background-color: #2980b9;
 }
 
-.started::before {
+.running::before {
   background-image: url("img/arrows.svg");
 }
 
