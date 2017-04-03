@@ -113,6 +113,15 @@ a, a:visited {
   background-color: #bdc3c7;
 }
 
+.timedout::before {
+  background-image: url("img/thunder.svg");
+  animation: bounce 4s infinite linear;
+}
+
+.timedout {
+  background-color: #f5bf4f;
+}
+
 .config-button {
   background-color: transparent;
   background-image: url('img/tool.svg');
